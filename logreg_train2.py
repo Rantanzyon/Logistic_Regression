@@ -23,26 +23,31 @@ X_train, X_test, y_train, y_test = train_test_split(
 mean_train = X_train.mean(axis=0)
 std_train = X_train.std(axis=0)
 
-X_train = (X_train - mean_train) / std_train
-X_test  = (X_test  - mean_train) / std_train
+print(mean_train)
+print(std_train)
+
+X_train_norm = (X_train - mean_train) / std_train
+X_test_norm  = (X_test  - mean_train) / std_train
+
+
 
 # ================================
 epochs = 500
 lr = 0.05
-m = len(X_train)
+m = len(X_train_norm)
 
 W_all = []
 b_all = []
 
 for house in houses:
-    W = np.zeros(X_train.shape[1])
+    W = np.zeros(X_train_norm.shape[1])
     b = 0
     Y = np.array([1 if label == house else 0 for label in y_train])
 
     for epoch in range(epochs):
-        Z = X_train.dot(W) + b
+        Z = X_train_norm.dot(W) + b
         A = 1 / (1 + np.exp(-Z))
-        grad_W = (1 / m) * X_train.T.dot(A - Y)
+        grad_W = (1 / m) * X_train_norm.T.dot(A - Y)
         grad_b = (1 / m) * np.sum(A - Y)
         W -= lr * grad_W
         b -= lr * grad_b
@@ -55,22 +60,22 @@ b_all = np.array(b_all)   # shape (4,)
 
 # ================================
 
-Z_test = X_test.dot(W_all.T) + b_all
+Z_test = X_test_norm.dot(W_all.T) + b_all
 A_test = 1 / (1 + np.exp(-Z_test))
 pred = np.array(houses)[np.argmax(A_test, axis=1)]
 # print(pred[:10])
 
-print("Accuracy One-vs-All vectorisée :", accuracy_score(y_test, pred))
+print("Accuracy perso :", accuracy_score(y_test, pred))
 
 # ================================
 
 clf = LogisticRegression(max_iter=1000)
-clf.fit(X_train, y_train)
+clf.fit(X_train_norm, y_train)
 sk_pred = clf.predict(X_test)
 # print(sk_pred[:10])
 
 
-print("Accuracy sklearn LogisticRegression :", accuracy_score(y_test, sk_pred))
+print("Accuracy sklearn :", accuracy_score(y_test, sk_pred))
 
 # ================================
 
@@ -87,13 +92,13 @@ Z = X.dot(W_all.T) + b_all
 A = 1 / (1 + np.exp(-Z))
 pred = np.array(houses)[np.argmax(A, axis=1)]
 
-print(pred[:10])
+print(pred[:20])
 
 clf = LogisticRegression(max_iter=1000)
-clf.fit(X_train, y_train)
+clf.fit(X_train_norm, y_train)
 # print(X)
 sk_pred = clf.predict(X)
-print(sk_pred[:10])
+print(sk_pred[:20])
 
 with open('houses.csv', 'w') as file:
     
