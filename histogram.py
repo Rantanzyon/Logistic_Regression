@@ -38,7 +38,7 @@ def main():
 
         data = ft_load_csv('./datasets/dataset_train.csv')
 
-        fig, axes = plt.subplots(4, 4)
+        fig, axes = plt.subplots(4, 4, figsize=(50,30))
         axes = axes.flatten()
 
         score = [63296.0,367.53117366907327,6.061064255263739,-3.6753117366907326,1.757,-643.2710923221507,445.8275645781746,2.238112438598215,1056.1473663354177,5.825262728199693,-0.333961997869375,-246.42719,44.8]
@@ -53,10 +53,10 @@ def main():
             h3 = data[data['Hogwarts House'] == 'Ravenclaw'][subject].dropna()
             h4 = data[data['Hogwarts House'] == 'Slytherin'][subject].dropna()
             
-            ax.hist(h1, bins=20, linewidth=0.5, density=True, histtype='step', color='orange', label='Hufflepuff')
-            ax.hist(h2, bins=20, linewidth=0.5, density=True, histtype='step', color='red', label='Gryffindor')
-            ax.hist(h3, bins=20, linewidth=0.5, density=True, histtype='step', color='blue', label='Ravenclaw')
-            ax.hist(h4, bins=20, linewidth=0.5, density=True, histtype='step', color='green', label='Slytherin')
+            ax.hist(h1, bins=20, linewidth=1, density=True, histtype='step', color='orange', label='Hufflepuff')
+            ax.hist(h2, bins=20, linewidth=1, density=True, histtype='step', color='red', label='Gryffindor')
+            ax.hist(h3, bins=20, linewidth=1, density=True, histtype='step', color='blue', label='Ravenclaw')
+            ax.hist(h4, bins=20, linewidth=1, density=True, histtype='step', color='green', label='Slytherin')
             ax.scatter([score[i]], [0], color='black')
 
 

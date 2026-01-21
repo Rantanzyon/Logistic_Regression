@@ -51,7 +51,7 @@ def training_logreg(X: np.array, dataset: pd.DataFrame) -> tuple:
         lr = 0.1
         b = 0
         m = len(X)
-        W = np.array([0.0] * 13)
+        W = np.array([0.0] * len(X[0]))
         Y = np.array([1 if label == house else 0 for label in dataset['Hogwarts House']])
 
         for _ in range(epochs):
@@ -80,8 +80,9 @@ def testing_logreg(W: np.array, b: np.array, dataset: pd.DataFrame, mean: dict, 
     X = normalize(dataset, mean, std)
     Z = X.dot(W.T) + b
     A = 1 / (1 + np.exp(-Z))
-    count = 0
 
+
+    count = 0
     for i, stud in enumerate(A):
         best = 0
         for index, prob in enumerate(stud):
@@ -102,36 +103,72 @@ def testing_logreg(W: np.array, b: np.array, dataset: pd.DataFrame, mean: dict, 
     return accuracy
 
 
-def logistic_regression(dataset: pd.DataFrame) -> tuple:
+import json
+def create_json_file(W, b, mean, std, dataset):
+
+    houses = ['Gryffindor', 'Ravenclaw', 'Hufflepuff', 'Slytherin']
+
+    data_json = dict.fromkeys(houses)
+    for i, house in enumerate(data_json.keys()):
+
+        data_json[house] = dict.fromkeys(dataset.columns[6:])
+        for j, feature in enumerate(data_json[house].keys()):
+            data_json[house][feature] = {}
+            data_json[house][feature]['mean'] = mean[feature]
+            data_json[house][feature]['std'] = std[feature]
+            data_json[house][feature]['w'] = W[i][j]
+        data_json[house]['b'] = b[i]
+
+
+    json_formatted_string = json.dumps(data_json, indent=4)
+
+    with open('datajson.json', 'w') as file:
+        file.write(json_formatted_string)
+
+
+def logistic_regression(dataset: pd.DataFrame):
+
+    # delete useless columns based on histogram observation
+    dataset = dataset.drop(columns=['Arithmancy', 'Care of Magical Creatures'])
 
     # split dataset 80/20
     dataset_train, dataset_test = splitted_data(dataset)
 
-    # calculer mean et std
+    # calculate mean et std
     mean_train = mean(dataset_train)
     std_train = std(dataset_train)
 
     # fill nan with mean
     dataset_train = dataset_train.fillna(value=mean_train)
 
-    # normaliser (x - mean) / std
+    # normalize (x - mean) / std
     X_train_norm = normalize(dataset_train, mean_train, std_train)
 
-    Ws, bs = training_logreg(X_train_norm, dataset_train)
-    accuracy = testing_logreg(Ws, bs, dataset_test, mean_train, std_train)
-    print(accuracy)
+    W, b = training_logreg(X_train_norm, dataset_train)
+    accuracy = testing_logreg(W, b, dataset_test, mean_train, std_train)
 
-    return (Ws, bs)
+    create_json_file(W, b, mean_train, std_train, dataset)
+    print(accuracy)
+    print(mean_train)
+
+
 
 
 
 dataset = pd.read_csv('./datasets/dataset_train.csv')
-W, b = logistic_regression(dataset)
+logistic_regression(dataset)
 
-# print(W, b)
+# with open(training_result.csv)
 
+# data = {
+#     "a": 10,
+#     "b": 3,
+#     "c": 25
+# }
+# # sorted_data = sorted(data.items(), key=lambda x: x[1])
+# # print(sorted_data)
 
-
-
+# key_max = max(data, key=data.get)
+# print(key_max)
 
 
