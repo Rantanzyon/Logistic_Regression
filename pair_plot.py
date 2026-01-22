@@ -8,7 +8,7 @@ def main():
 		data = ft_load_csv('./datasets/dataset_train.csv')
 		features = data.columns[6:]
 		length = len(features)
-		_, ax = plt.subplots(length, length)
+		_, ax = plt.subplots(length, length, figsize=(50,30))
 		houses = ['Gryffindor', 'Hufflepuff', 'Slytherin', 'Ravenclaw']
 
 
@@ -17,13 +17,17 @@ def main():
 
 				ax[i, j].set_xticks([])
 				ax[i, j].set_yticks([])
-				if i != j:
 
-					for house in houses:
+				for house in houses:
 
+					if i!= j:
 						feature1 = data[data['Hogwarts House'] == house][features[i]].astype(float)
 						feature2 = data[data['Hogwarts House'] == house][features[j]].astype(float)
 						ax[i, j].scatter(feature1, feature2, s=1)
+					else:
+						feature1 = data[data['Hogwarts House'] == house][features[i]].astype(float)
+						ax[i, j].hist(feature1, bins=20, linewidth=1, density=True, histtype='step')
+
 
 				if i == 0:
 					name = features[j]

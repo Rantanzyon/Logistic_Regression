@@ -41,7 +41,7 @@ def main():
         fig, axes = plt.subplots(4, 4, figsize=(50,30))
         axes = axes.flatten()
 
-        score = [63296.0,367.53117366907327,6.061064255263739,-3.6753117366907326,1.757,-643.2710923221507,445.8275645781746,2.238112438598215,1056.1473663354177,5.825262728199693,-0.333961997869375,-246.42719,44.8]
+        score = [45352.0,-370.8446553065122,2.9652261693057698,3.708446553065121,6.349,522.5804860261724,602.8530505526203,6.460017331082373,1048.0538781192083,8.51462223474569,0.5774322733924575,-231.292,-26.26]
 
         for i, subject in enumerate(data.columns[6:]):
 
@@ -57,6 +57,16 @@ def main():
             ax.hist(h2, bins=20, linewidth=1, density=True, histtype='step', color='red', label='Gryffindor')
             ax.hist(h3, bins=20, linewidth=1, density=True, histtype='step', color='blue', label='Ravenclaw')
             ax.hist(h4, bins=20, linewidth=1, density=True, histtype='step', color='green', label='Slytherin')
+
+            # colors = ['orange', 'red', 'blue', 'green']
+            # houses = ['Gryffindor', 'Ravenclaw', 'Hufflepuff', 'Slytherin']
+
+            # ax.hist([h1, h2, h3, h4], 20, lw=0.5, density=True, histtype='step', color=colors, label=houses)
+
+            # # ax.hist(h1, 20, density=True, histtype='bar', color='orange', label='Hufflepuff')
+            # # ax.hist(h2, 20, density=True, histtype='bar', color='red', label='Gryffindor')
+            # # ax.hist(h3, 20, density=True, histtype='bar', color='blue', label='Ravenclaw')
+            # # ax.hist(h4, 20, density=True, histtype='bar', color='green', label='Slytherin')
             ax.scatter([score[i]], [0], color='black')
 
 
