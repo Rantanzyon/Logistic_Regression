@@ -25,14 +25,22 @@ def ft_normalize(dataset: pd.DataFrame, mean: dict, std: dict) -> np.array:
 	dataset_norm = (dataset - mean) / std
 	return dataset_norm
 
-def ft_weights(training: pd.DataFrame, features: list):
+def get_parameters(training: pd.DataFrame, features: list):
 
 	houses = ['Gryffindor', 'Ravenclaw', 'Hufflepuff', 'Slytherin']
 	Ws = []
+	Bs = []
 	for house in houses:
-		W = [training[house][feature]['w'] for feature in features]
+
+		W = []
+		for feature in features:
+			W.append(training[house][feature]['w'])
+			b = training[house][feature]['b']
+
+		# W = [training[house][feature]['w'] for feature in features]
 		Ws.append(W)
-	return np.array(Ws)
+		Bs.append(b)
+	return (np.array(Ws), np.array(Bs))
 
 def ft_biais(training: pd.DataFrame, features: list):
 
@@ -65,8 +73,10 @@ def main():
 
 		# normalize (x - mean) / std
 		X = ft_normalize(dataset, mean, std)
-		W = ft_weights(training, features)
-		b = ft_biais(training, features)
+
+		W, b = get_parameters(training, features)
+		# W = ft_weights(training, features)
+		# b = ft_biais(training, features)
 
 		Z = X.dot(W.T) + b
 		A = 1 / (1 + np.exp(-Z))

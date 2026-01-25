@@ -1,270 +1,156 @@
-from load_csv import ft_load_csv
-import math
 import matplotlib.pyplot as plt
-import numpy as np
-import time
-from sklearn.linear_model import LogisticRegression
 import pandas as pd
-from sklearn.metrics import accuracy_score
+import numpy as np
 
+def splitted_data(dataset: pd.DataFrame) -> tuple:
 
+    index = int(len(dataset) * 0.8)
+    dataset_train = dataset[:index]
+    dataset_test = dataset[index:]
 
-def main():
+    # dataset_train = dataset[index:]
+    # dataset_test = dataset[:index]
+    return (dataset_train, dataset_test)
 
-	try:
+def mean(dataset: pd.DataFrame) -> dict:
 
-		data = ft_load_csv('./datasets/dataset_train.csv')
+    all_mean = {}
+    for feature in dataset.columns[6:]:
+        column = [e for e in dataset[feature] if e == e]
+        mean = sum(column) / len(column)
+        all_mean[feature] = mean
+    return all_mean
 
-		features = data.columns[6:]
-		houses = ['Gryffindor', 'Hufflepuff', 'Slytherin', 'Ravenclaw']
-		data[features] = data[features].fillna(data[features].mean())
+def std(dataset: pd.DataFrame) -> dict:
 
-		dataset_size = len(data)
-		print(dataset_size)
-		
+    all_std = {}
+    for feature in dataset.columns[6:]:
+        column = [e for e in dataset[feature] if e == e]
+        mean = sum(column) / len(column)
+        var = sum([(e - mean) ** 2 for e in column]) / (len(column) - 1)
+        std = var ** 0.5
+        all_std[feature] = std
+    return all_std
 
-		set_train = data.iloc[:int(len(data) * 80 / 100)]
-		set_test = data.iloc[int(len(data) * 80 / 100):]
+def normalize(dataset: pd.DataFrame, mean: dict, std: dict) -> np.array:
 
+    features = dataset.columns[6:]
+    mean = np.array(list(mean.values()))
+    std = np.array(list(std.values()))
+    dataset = np.array(dataset[features])
+    dataset_norm = (dataset - mean) / std
+    return dataset_norm
 
-		# normaliser
-		mean_train = set_train[features].mean()
-		std_train = set_train[features].std()
-		print('a')
+def training_logreg(X: np.array, dataset: pd.DataFrame) -> tuple:
 
-		# print(mean_train)
-		# print(std_train)
+    Ws = []
+    bs = []
+    for house in ['Gryffindor', 'Ravenclaw', 'Hufflepuff', 'Slytherin']:
 
-		# features matrice
-		X = np.array((set_train[features] - mean_train) / std_train)
-		# print(f'X: {X.shape}')
+        epochs = 1000
+        lr = 0.1
+        b = 0
+        m = len(X)
+        W = np.array([0.0] * len(X[0]))
+        Y = np.array([1 if label == house else 0 for label in dataset['Hogwarts House']])
 
+        for _ in range(epochs):
 
-		# vector weights
-		W = np.array([0] * 13)
-		# print(f'W: {W.shape}')
+            Z = X.dot(W) + b
+            A = 1 / (1 + np.exp(-Z))
 
+            grad_w = (1 / m) * X.T.dot(A - Y)
+            grad_b = (1 / m) * np.sum((A - Y))
 
-		# biais
-		b = 0
-		# print(b)
+            W -= lr * grad_w
+            b -= lr * grad_b
 
-		# model Z
-		Z = X.dot(W) + b
-		# print(Z)
-		# print(f'Z: {Z.shape}')
+        Ws.append(W)
+        bs.append(b)
 
+    Ws = np.array(Ws)
+    bs = np.array(bs)
 
-		# model A: sigmoid
-		A = 1 / (1 + np.exp(-Z))
-		# print(f'A: {A.shape}')
+    return (Ws, bs)
 
+def testing_logreg(W: np.array, b: np.array, dataset: pd.DataFrame, mean: dict, std: dict) -> float:
 
+    houses = ['Gryffindor', 'Ravenclaw', 'Hufflepuff', 'Slytherin']
+    dataset = dataset.fillna(value=mean)
+    X = normalize(dataset, mean, std)
+    Z = X.dot(W.T) + b
+    A = 1 / (1 + np.exp(-Z))
 
-		m = len(X)
-		# print(m)
 
-		epochs = 1000
-		lr = 0.05
+    count = 0
+    for i, stud in enumerate(A):
+        best = 0
+        for index, prob in enumerate(stud):
+            if prob > best:
+                house = houses[index]
+                best = prob
 
-		result = {}
-		W_all = []
-		b_all = []
-		for house in houses:
-			Y = np.array([1 if set_train.loc[index, 'Hogwarts House'] == house else 0 for index in set_train.index])
-			result[house] = {}
-			for epoch in range(epochs):
+        if house == dataset['Hogwarts House'].iloc[i]:
+            count += 1
 
-				Z = X.dot(W) + b
-				A = 1 / (1 + np.exp(-Z))
-				grad_W = (1 / m) * (np.transpose(X)).dot((A - Y))
-				grad_b = (1 / m) * np.sum(A - Y)
+    accuracy = count * 100 / len(X)
+    return accuracy
 
-				W = W - lr * grad_W
-				b = b - lr * grad_b
-			
-			result[house]['W'] = W
-			result[house]['b'] = b
-			W_all.append(W)
-			b_all.append(b)
 
-		print('================')
-		W_all = np.array(W_all)
-		b_all = np.array(b_all)
+import json
+def create_json_file(W, b, mean, std, dataset):
 
+    houses = ['Gryffindor', 'Ravenclaw', 'Hufflepuff', 'Slytherin']
 
-		print('==============================')
-		print(W_all)
-		print(b_all)
+    data_json = dict.fromkeys(houses)
+    for i, house in enumerate(data_json.keys()):
 
-		# ================================
-		# TESTING ACCURACY
+        data_json[house] = dict.fromkeys(dataset.columns[6:])
+        for j, feature in enumerate(data_json[house].keys()):
+            data_json[house][feature] = {}
+            data_json[house][feature]['mean'] = mean[feature]
+            data_json[house][feature]['std'] = std[feature]
+            data_json[house][feature]['w'] = W[i][j]
+            data_json[house][feature]['b'] = b[i]
+        # data_json[house]['b'] = b[i]
 
-		print('a')
 
-		X_test = np.array((set_test[features] - mean_train) / std_train)
-		print(X_test.shape)
+    json_formatted_string = json.dumps(data_json, indent=4)
 
-		Z = X_test.dot(W_all.T) + b_all
-		A = 1 / (1 + np.exp(-Z))
+    with open('datajson.json', 'w') as file:
+        file.write(json_formatted_string)
 
-		pred = np.array(houses)[np.argmax(A, axis=1)]
-		print(pred)
 
-		print('===============================')
+def logistic_regression(dataset: pd.DataFrame):
 
-		real_test = set_test['Hogwarts House']
-		print(real_test)
+    # delete useless columns based on histogram observation
+    dataset = dataset.drop(columns=['Arithmancy', 'Care of Magical Creatures'])
 
-		print('======')
+    # split dataset 80/20
+    # dataset_train, dataset_test = splitted_data(dataset)
+    dataset_train = dataset.sample(frac=0.8)
+    dataset_test = dataset.drop(dataset_train.index)
 
-		print(accuracy_score(real_test, pred))
+    # calculate mean et std
+    mean_train = mean(dataset_train)
+    std_train = std(dataset_train)
 
+    # fill nan with mean
+    dataset_train = dataset_train.fillna(value=mean_train)
 
+    # normalize (x - mean) / std
+    X_train_norm = normalize(dataset_train, mean_train, std_train)
 
+    W, b = training_logreg(X_train_norm, dataset_train)
+    accuracy = testing_logreg(W, b, dataset_test, mean_train, std_train)
+    print(f'Accuracy: {accuracy:.2f}%')
 
-		# # ================================
-		# # MY PREDICTION
+    create_json_file(W, b, mean_train, std_train, dataset)
 
-		# df_test = ft_load_csv('./datasets/dataset_test.csv')
 
-		# # Remplacer les nan par la mean
-		# df_test[features] = df_test[features].fillna(mean_train[features])
 
-		# # normaliser
-		# df_test[features] = (df_test[features] - mean_train[features]) / std_train[features]
-		# print(df_test[features].shape)
 
 
-		# X_test = df_test[features].to_numpy()
 
-		# Z = X_test.dot(W_all.T) + b_all
-		# A = 1 / (1 + np.exp(-Z))
-
-		# pred = np.array(houses)[np.argmax(A, axis=1)]
-		# # print(pred)
-
-		# # ================================
-		# # SKLEARN PRED
-
-		clf = LogisticRegression(
-			max_iter=1000
-		)
-
-		clf.fit(X, data['Hogwarts House'])
-
-		sk_pred = clf.predict(X_test)
-		# print(sk_pred)
-		print(accuracy_score(real_test, sk_pred))
-
-		# same = pred == sk_pred
-
-		# print("Même prédiction :", np.sum(same), "/", len(same))
-		# print("Différences     :", np.sum(~same))
-
-
-
-
-
-			
-
-		# # print(W)
-		# # print(b)
-
-		# Z = X.dot(W) + b
-		# A = 1 / (1 + np.exp(-Z))
-
-		# pred = (A >= 0.5).astype(int)
-		# accuracy = np.mean(pred == Y)
-
-		# # print("accuracy Gryffindor:", accuracy)
-
-		# x = np.array([60888.0,-482.1390963522175,-7.327170322866657,4.821390963522175,-6.6110000000000015,-525.2725025237612,359.14817180301407,5.197858179249288,1070.7121427170061,10.032461125685584,-2.1852199688256664,-253.62839,-126.66])
-
-		# x = np.where(np.isnan(x), mean_train, x)
-
-		# x = (x - mean_train) / std_train
-
-
-		# probs = []
-		# for house in houses:
-
-		# 	z = x.dot(result[house]['W']) + result[house]['b']
-		# 	probs.append(1 / (1 + np.exp(-z)))
-
-		# print(houses[np.argmax(probs)])
-
-		# # ======================================
-
-		# y = data['Hogwarts House']
-		# clf = LogisticRegression(
-		# 	max_iter=1000
-		# )
-
-		# clf.fit(X, y)
-
-
-		# mean_train = mean_train.to_numpy()
-		# std_train = std_train.to_numpy()
-
-		# # ton vecteur élève
-		# x_test = np.array([60888.0,-482.1390963522175,-7.327170322866657,4.821390963522175,-6.6110000000000015,-525.2725025237612,359.14817180301407,5.197858179249288,1070.7121427170061,10.032461125685584,-2.1852199688256664,-253.62839,-126.66])
-
-		# # remplir NaN
-		# x_test = np.where(np.isnan(x_test), mean_train, x_test)
-
-		# # normalisation
-		# x_test = (x_test - mean_train) / std_train
-
-		# # reshape pour sklearn
-		# x_test = x_test.reshape(1, -1)
-
-		# # prédiction sklearn
-		# sk_pred = clf.predict(x_test)
-
-		# print("sklearn prediction:", sk_pred)
-
-
-
-
-
-		# print(result)
-
-		with open('result.csv', 'w') as file:
-
-			file.write(f'Hogwarts House,b,{','.join(data[features])}\n')
-
-			for house in houses:
-
-				file.write(f'{house},{result[house]['b']},{','.join(result[house]['W'].astype(str))}\n')
-
-			file.write(f'mean,,{','.join(mean_train.astype(str))}\n')
-			file.write(f'std,,{','.join(std_train.astype(str))}\n')
-			# index = 0
-			# for feature in features:
-
-			# 	for house in houses:
-
-			# 		w, b = result[feature][house]
-			# 		file.write(f'{index},{feature},{house},{w},{b}\n')
-			# 		index += 1
-			# n = 0
-
-			# print(f'Gryffindor: {1 / (1 + np.exp(-(wg*n+bg)))}')
-			# print(f'Hufflepuff: {1 / (1 + np.exp(-(wh*n+bh)))}')
-			# print(f'Slytherin: {1 / (1 + np.exp(-(ws*n+bs)))}')
-			# print(f'Ravenclaw: {1 / (1 + np.exp(-(wr*n+br)))}')
-
-
-
-
-
-
-		
-
-	except BaseException as error:
-		print(f'{type(error).__name__}: {error}')
-
-if __name__ == '__main__':
-	main()
-
+dataset = pd.read_csv('./datasets/dataset_train.csv')
+logistic_regression(dataset)
