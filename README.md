@@ -3,7 +3,7 @@
 ## 📌 Déscription
 Bienvenue à l'école de Poudlard !
 
-A chaque rentrée, le 'Choipeau Magique' doit répartir les élèves parmi les 4 maisons de l'école (Gryffindor, Hufflepuff, Ravenclaw, Slytherin)
+A chaque rentrée, le 'Choixpeau Magique' doit répartir les élèves parmi les 4 maisons de l'école (Gryffindor, Hufflepuff, Ravenclaw, Slytherin)
 
 À partir des bulletins scolaires d'anciens élèves, le but est de créer un modèle qui permettra de prédire dans quelle maison doit aller un nouvel élève
 
