@@ -7,9 +7,77 @@ import json
 
 class Logistic_Regression():
 
-    def __init__(self, dataset: pandas.DataFrame):
+    def __init__(self, conf_file):
 
-        self._dataset = dataset
+        with open(conf_file, 'r') as file:
+            conf = json.load(file)
+
+        # DATA_FILE
+        if not conf.get('data_file'):
+            raise ValueError(f'{conf_file}: data_file: key is missing.')
+        else:
+            self._dataset = pandas.read_csv(conf['data_file'])
+
+        # ACTIVATION
+        if not conf.get('activation'):
+            self.activation = 'sigmoid'
+        else:
+            expected_values = ['sigmoid']
+            if conf['activation'] not in expected_values:
+                raise ValueError(f'{conf_file}: activation: expected {expected_values}.')
+            self.activation = conf['activation']
+
+        # WEIGHTS_INIT
+        if not conf.get('weights_init'):
+            self.weights_init = 'zeros'
+        else:
+            expected_values = ['zeros', 'random']
+            if conf['weights_init'] not in expected_values:
+                raise ValueError(f'{conf_file}: weights_init: expected {expected_values}.')
+            self.weights_init = conf['weights_init']
+
+        # LOSS
+        if not conf.get('loss'):
+            self.loss = 'BCE'
+        else:
+            expected_values = ['BCE']
+            if conf['loss'] not in expected_values:
+                raise ValueError(f'{conf_file}: loss: expected {expected_values}.')
+            self.loss = conf['loss']
+
+        # EPOCHS
+        if not conf.get('epochs'):
+            self.epochs = 10000
+        else:
+            if not isinstance(conf['epochs'], int) or conf['epochs'] < 1:
+                raise ValueError(f'{conf_file}: epochs: expected a positive integer.')
+            self.epochs = conf['epochs']
+
+        # LEARNING_RATE
+        if not conf.get('learning_rate'):
+            self.learning_rate = 10000
+        else:
+            if not isinstance(conf['learning_rate'], float) or conf['learning_rate'] < 0:
+                raise ValueError(f'{conf_file}: learning_rate: expected a positive float.')
+            self.learning_rate = conf['learning_rate']
+
+        # OPTIMIZATION
+        if not conf.get('optimization'):
+            self.optimization = 'GD'
+        else:
+            expected_values = ['GD', 'SGD', 'BGD', 'MBGD']
+            if conf['optimization'] not in expected_values:
+                raise ValueError(f'{conf_file}: optimization: expected {expected_values}.')
+            self.optimization = conf['optimization']
+
+        # BATCH_SIZE
+        if not conf.get('batch_size'):
+            self.batch_size = 20
+        else:
+            if not isinstance(conf['batch_size'], int) or conf['batch_size'] < 1:
+                raise ValueError(f'{conf_file}: batch_size: expected a positive integer.')
+            self.batch_size = conf['batch_size']
+
 
     def get_stats(self) -> dict:
 
@@ -57,14 +125,14 @@ class Logistic_Regression():
         self.Xn_test = self.normalize(self.X_test)
     
 
-    def ft_init(self, init: str, ) -> dict:
+    def ft_init(self) -> dict:
 
         height = len(self._labels)
         width = self.Xn_train.shape[1]
         params = {}
 
 
-        match init:
+        match self.weights_init:
 
             case 'zeros':
                 params['W'] = numpy.zeros((height, width))
@@ -80,7 +148,9 @@ class Logistic_Regression():
         activations = {}
 
         Z = params['W'].dot(X.T) + params['b']
-        activations['A'] = 1 / (1 + numpy.exp(-Z))
+
+        if self.activation == 'sigmoid':
+            activations['A'] = 1 / (1 + numpy.exp(-Z))
 
         return activations
     
@@ -89,15 +159,16 @@ class Logistic_Regression():
         m = X.shape[0]
         gradients = {}
 
-        gradients['W'] = (1 / m) * numpy.dot(activations['A'] - Y, X)
-        gradients['b'] = (1 / m) * numpy.sum(activations['A'] - Y, axis=1, keepdims=True)
+        if self.loss == 'BCE':
+            gradients['W'] = (1 / m) * numpy.dot(activations['A'] - Y, X)
+            gradients['b'] = (1 / m) * numpy.sum(activations['A'] - Y, axis=1, keepdims=True)
 
         return gradients
     
-    def ft_update(self, gradients, params, lr) -> dict:
+    def ft_update(self, gradients, params) -> dict:
 
-        params['W'] -= lr * gradients['W']
-        params['b'] -= lr * gradients['b']
+        params['W'] -= self.learning_rate * gradients['W']
+        params['b'] -= self.learning_rate * gradients['b']
 
         return params
     
@@ -118,18 +189,27 @@ class Logistic_Regression():
         print(f'Accuracy : {accuracy:.2f}%')
 
 
-    def train(self, optimization='GD', init='random', epochs=5000, learning_rate=0.1):
+    def train(self):
 
         X = self.Xn_train
         Y = numpy.array([[1 if x_label == label else 0 for x_label in self.Y_train] for label in self._labels])
 
-        params = self.ft_init(init)
+        params = self.ft_init()
 
-        for epoch in tqdm(range(epochs)):
+        for epoch in tqdm(range(self.epochs)):
 
-            activations = self.ft_activation(X, params)
-            gradients = self.ft_gradients(X, Y, activations)
-            params = self.ft_update(gradients, params, learning_rate)
+            if self.optimization == 'GD':
+
+                activations = self.ft_activation(X, params)
+                gradients = self.ft_gradients(X, Y, activations)
+                params = self.ft_update(gradients, params)
+
+            if self.optimization == 'SGD':
+                
+                activations = self.ft_activation(X, params)
+                gradients = self.ft_gradients(X, Y, activations)
+                params = self.ft_update(gradients, params)
+
 
 
         # ============== TESTING
@@ -142,23 +222,19 @@ def main():
     try:
 
         parser = argparse.ArgumentParser()
-        parser.add_argument('--file', default='./datasets/dataset_train.csv')
         parser.add_argument('--conf', default='conf.json')
         args = parser.parse_args()
 
-        dataset = pandas.read_csv(args.file)
-        with open(args.conf, 'r') as file:
-            conf = json.load(file)
+        # dataset = pandas.read_csv(args.file)
 
-        logreg = Logistic_Regression(dataset, conf)
+        logreg = Logistic_Regression(args.conf)
 
-        features = dataset.columns[6:]
+        features = logreg._dataset.columns[6:]
         features_filtered = features.drop(['Arithmancy', 'Care of Magical Creatures'])
 
         logreg.setup('Hogwarts House', features_filtered)
-        logreg.train(init='random', optimization='GD', epochs=10000, learning_rate=0.1)
-        # init: random, zeros
-        # optimization : GD, SGD, BGD, MBGD
+        logreg.train()
+
 
     except BaseException as error:
         print(f'{type(error).__name__}: {error}')
