@@ -4,6 +4,7 @@ import argparse
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 import json
+import random
 
 class Logistic_Regression():
 
@@ -55,7 +56,7 @@ class Logistic_Regression():
 
         # LEARNING_RATE
         if not conf.get('learning_rate'):
-            self.learning_rate = 10000
+            self.learning_rate = 0.1
         else:
             if not isinstance(conf['learning_rate'], float) or conf['learning_rate'] < 0:
                 raise ValueError(f'{conf_file}: learning_rate: expected a positive float.')
@@ -160,15 +161,15 @@ class Logistic_Regression():
         gradients = {}
 
         if self.loss == 'BCE':
-            gradients['W'] = (1 / m) * numpy.dot(activations['A'] - Y, X)
-            gradients['b'] = (1 / m) * numpy.sum(activations['A'] - Y, axis=1, keepdims=True)
+            gradients['dW'] = (1 / m) * numpy.dot(activations['A'] - Y, X)
+            gradients['db'] = (1 / m) * numpy.sum(activations['A'] - Y, axis=1, keepdims=True)
 
         return gradients
     
     def ft_update(self, gradients, params) -> dict:
 
-        params['W'] -= self.learning_rate * gradients['W']
-        params['b'] -= self.learning_rate * gradients['b']
+        params['W'] -= self.learning_rate * gradients['dW']
+        params['b'] -= self.learning_rate * gradients['db']
 
         return params
     
@@ -188,27 +189,55 @@ class Logistic_Regression():
         accuracy = count * 100 / len(X)
         print(f'Accuracy : {accuracy:.2f}%')
 
+    def ft_compute_loss(self, X, Y, params):
+
+        m = len(X)
+        A = self.ft_activation(X, params)
+        loss = (-1 / m) * numpy.sum(Y * numpy.log(A['A']) + (1 - Y) * numpy.log(1 - A['A']))
+        return loss
+
 
     def train(self):
 
         X = self.Xn_train
         Y = numpy.array([[1 if x_label == label else 0 for x_label in self.Y_train] for label in self._labels])
+        print(X.shape)
+        print(Y.shape)
 
         params = self.ft_init()
-
+        L = []
         for epoch in tqdm(range(self.epochs)):
 
             if self.optimization == 'GD':
 
-                activations = self.ft_activation(X, params)
-                gradients = self.ft_gradients(X, Y, activations)
-                params = self.ft_update(gradients, params)
-
-            if self.optimization == 'SGD':
                 
                 activations = self.ft_activation(X, params)
                 gradients = self.ft_gradients(X, Y, activations)
                 params = self.ft_update(gradients, params)
+                # if epoch % 50 == 0:
+                    # loss = self.ft_compute_loss()
+                    # print(f'epoch({epoch}) - LOSS: {loss}')
+
+                loss = self.ft_compute_loss(X, Y, params)
+                L.append(loss)
+
+
+            if self.optimization == 'SGD':
+
+                r = int(random.random() * len(X))
+                x = X[r].reshape(1, -1)
+                y = Y[:, r].reshape(-1, 1)
+
+                activations = self.ft_activation(x, params)
+                gradients = self.ft_gradients(x, y, activations)
+                params = self.ft_update(gradients, params)
+
+                loss = self.ft_compute_loss(X, Y, params)
+                L.append(loss)
+
+
+        plt.plot(list(range(self.epochs)), L)
+        plt.show()
 
 
 

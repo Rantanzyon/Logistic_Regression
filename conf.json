@@ -3,8 +3,8 @@
 	"activation": "sigmoid",
 	"weights_init": "zeros",
 	"loss": "BCE",
-	"epochs": 10000,
+	"epochs": 1000,
 	"learning_rate": 0.1,
-	"optimization": "GD",
+	"optimization": "SGD",
 	"batch_size": 8
 }
