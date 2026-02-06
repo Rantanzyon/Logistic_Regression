@@ -1,0 +1,13 @@
+{
+	"model": {
+		"data_train": "./data_train.csv",
+		"data_valid": "./data_valid.csv",
+		"activation": "sigmoid",
+		"weights_init": "zeros",
+		"loss": "BCE",
+		"epochs": 10000,
+		"learning_rate": 0.1,
+		"optimization": "GD",
+		"batch_size": 8
+	}
+}

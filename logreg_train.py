@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
+from tqdm import tqdm
 
 def splitted_data(dataset: pd.DataFrame) -> tuple:
 
@@ -45,16 +46,21 @@ def training_logreg(X: np.array, dataset: pd.DataFrame) -> tuple:
 
     Ws = []
     bs = []
+
+    # Y = np.array([1 if label == 'Ravenclaw' else 0 for label in dataset['Hogwarts House']])
+    # print(Y.shape)
+    # print(Y)
+
     for house in ['Gryffindor', 'Ravenclaw', 'Hufflepuff', 'Slytherin']:
 
-        epochs = 1000
+        epochs = 5000
         lr = 0.1
         b = 0
         m = len(X)
         W = np.array([0.0] * len(X[0]))
         Y = np.array([1 if label == house else 0 for label in dataset['Hogwarts House']])
 
-        for _ in range(epochs):
+        for _ in tqdm(range(epochs), desc=house):
 
             Z = X.dot(W) + b
             A = 1 / (1 + np.exp(-Z))
@@ -70,6 +76,9 @@ def training_logreg(X: np.array, dataset: pd.DataFrame) -> tuple:
 
     Ws = np.array(Ws)
     bs = np.array(bs)
+
+    print(Ws)
+    print(bs)
 
     return (Ws, bs)
 
@@ -124,22 +133,34 @@ def create_json_file(W, b, mean, std, dataset):
 def logistic_regression(dataset: pd.DataFrame):
 
     # delete useless columns based on histogram observation
-    dataset = dataset.drop(columns=['Arithmancy', 'Care of Magical Creatures'])
+    # dataset = dataset.drop(columns=['Arithmancy', 'Care of Magical Creatures'])
 
     # split dataset 80/20
     # dataset_train, dataset_test = splitted_data(dataset)
-    dataset_train = dataset.sample(frac=0.8)
-    dataset_test = dataset.drop(dataset_train.index)
+    # dataset_train = dataset.sample(frac=0.8)
+    # dataset_test = dataset.drop(dataset_train.index)
+    dataset = dataset.dropna()
+
+    dataset_train = dataset.iloc[:int(len(dataset) * 80 / 100)]
+    dataset_test = dataset.iloc[int(len(dataset) * 80 / 100):]
+
+    print(dataset.shape)
+
+    print(dataset_train.shape)
+    # print(dataset_test.shape)
+    # print(dataset_train)
+    # return 
 
     # calculate mean et std
     mean_train = mean(dataset_train)
     std_train = std(dataset_train)
 
     # fill nan with mean
-    dataset_train = dataset_train.fillna(value=mean_train)
+    # dataset_train = dataset_train.fillna(value=mean_train)
 
     # normalize (x - mean) / std
     X_train_norm = normalize(dataset_train, mean_train, std_train)
+    print(X_train_norm)
 
     W, b = training_logreg(X_train_norm, dataset_train)
     accuracy = testing_logreg(W, b, dataset_test, mean_train, std_train)
